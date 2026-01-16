@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  labels    Label[]
+  lists     List[]
+  tasks     Task[]
+}
+
+model List {
+  id         String   @id @default(cuid())
+  name       String
+  emoji      String?
+  color      String?
+  isDefault  Boolean  @default(false)
+  isFavorite Boolean  @default(false)
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  tasks      Task[]
+}
+
+model Task {
+  id               String        @id @default(cuid())
+  name             String
+  description      String?
+  date             DateTime?
+  deadline         DateTime?
+  estimates        Int?
+  actualTime       Int?
+  priority         Int           @default(0)
+  isRecurring      Boolean       @default(false)
+  recurringPattern String?
+  completedAt      DateTime?
+  listId           String
+  userId           String
+  parentId         String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  attachments      Attachment[]
+  reminders        Reminder[]
+  parentTask       Task?         @relation("ParentSubtasks", fields: [parentId], references: [id])
+  subtasks         Task[]        @relation("ParentSubtasks")
+  user             User          @relation(fields: [userId], references: [id])
+  list             List          @relation(fields: [listId], references: [id])
+  history          TaskHistory[]
+  labels           Label[]       @relation("TaskLabels")
+}
+
+model Label {
+  id        String   @id @default(cuid())
+  name      String
+  color     String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  tasks     Task[]   @relation("TaskLabels")
+}
+
+model TaskHistory {
+  id        String   @id @default(cuid())
+  taskId    String
+  action    String
+  oldValue  String?
+  newValue  String?
+  changedBy String?
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String
+  size      Int
+  taskId    String
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id])
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  datetime  DateTime
+  taskId    String
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id])
+}
