@@ -150,6 +150,11 @@ export async function updateList(id: string, data: any) {
 }
 
 export async function deleteList(id: string) {
+  // First delete all tasks associated with the list
+  await prisma.task.deleteMany({
+    where: { listId: id },
+  });
+  
   return prisma.list.delete({
     where: { id },
   });

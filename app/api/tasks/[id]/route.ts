@@ -85,7 +85,7 @@ export async function PUT(
 
     return NextResponse.json(task);
   } catch (error) {
-    console.error('Error updating task:', error);
+    console.error('Error updating task:', error instanceof Error ? error.message : 'Unknown error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -94,7 +94,9 @@ export async function PUT(
       );
     }
     
-    if (error instanceof Error && error.message.includes('NotFound')) {
+    // Handle Prisma errors
+    const prismaError = error as any;
+    if (prismaError.code === 'P2025') { // Record not found
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
@@ -123,7 +125,9 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting task:', error);
     
-    if (error instanceof Error && error.message.includes('NotFound')) {
+    // Handle Prisma errors
+    const prismaError = error as any;
+    if (prismaError.code === 'P2025') { // Record not found
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }

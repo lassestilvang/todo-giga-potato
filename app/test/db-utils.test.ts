@@ -73,10 +73,12 @@ describe('Database Operations', () => {
       where: { id: testLabelId },
     });
 
-    // Delete test list
-    await prisma.list.deleteMany({
-      where: { id: testListId },
-    });
+    // Delete test list (using deleteList function which handles task deletion properly)
+    try {
+      await deleteList(testListId);
+    } catch (error) {
+      console.error('Error deleting test list:', error);
+    }
   });
 
   describe('List Operations', () => {

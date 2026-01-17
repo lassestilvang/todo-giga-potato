@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
-    console.error('Error creating task:', error);
+    console.error('Error creating task:', error.message);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import prisma from '@/lib/prisma';
+import { deleteList } from '@/lib/db-utils';
 
 const API_BASE_URL = 'http://localhost:32754/api';
 const DEFAULT_USER_ID = 'cmki1ekso0000i4ezi4fhaecm';
@@ -41,9 +42,12 @@ describe('Tasks API', () => {
       where: { id: testTaskId },
     });
 
-    await prisma.list.deleteMany({
-      where: { id: testListId },
-    });
+    // Use deleteList function which handles task deletion properly
+    try {
+      await deleteList(testListId);
+    } catch (error) {
+      console.error('Error deleting test list:', error);
+    }
   });
 
   describe('GET /api/tasks', () => {
