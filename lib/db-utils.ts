@@ -40,7 +40,7 @@ export async function createTask(data: any) {
     data: {
       ...taskData,
       reminders: reminders ? { create: reminders } : undefined,
-      labels: labels ? { connect: labels } : undefined,
+      labels: labels ? { connect: labels.map((labelId: string) => ({ id: labelId })) } : undefined,
       attachments: attachments ? { create: attachments } : undefined,
       subtasks: subtasks ? { create: subtasks } : undefined,
     },
