@@ -84,6 +84,9 @@ export function Sidebar({
   const [lists, setLists] = useState<ListWithRelations[]>([])
   const [labels, setLabels] = useState<LabelWithRelations[]>([])
   const [tasks, setTasks] = useState<TaskWithRelations[]>([])
+
+  // Ensure tasks is always an array before filtering
+  const safeTasks = Array.isArray(tasks) ? tasks : []
   const [isAddListDialogOpen, setIsAddListDialogOpen] = useState(false)
   const [isAddLabelDialogOpen, setIsAddLabelDialogOpen] = useState(false)
   const [editingList, setEditingList] = useState<ListWithRelations | null>(null)
@@ -93,18 +96,33 @@ export function Sidebar({
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
+      console.log('Starting data fetch');
       try {
-        const [listsData, labelsData, tasksData] = await Promise.all([
-          fetch("/api/lists"),
-          fetch("/api/labels"),
-          fetch("/api/tasks")
-        ]);
+        // Fetch lists
+        const listsResponse = await fetch("/api/lists");
+        if (listsResponse.ok) {
+          const listsJson = await listsResponse.json();
+          console.log('Lists data:', listsJson);
+          setLists(listsJson);
+        }
         
-        if (listsData.ok) setLists(await listsData.json());
-        if (labelsData.ok) setLabels(await labelsData.json());
-        if (tasksData.ok) setTasks(await tasksData.json());
+        // Fetch labels
+        const labelsResponse = await fetch("/api/labels");
+        if (labelsResponse.ok) {
+          const labelsJson = await labelsResponse.json();
+          console.log('Labels data:', labelsJson);
+          setLabels(labelsJson);
+        }
+        
+        // Fetch tasks
+        const tasksResponse = await fetch("/api/tasks?limit=1000");
+        if (tasksResponse.ok) {
+          const tasksJson = await tasksResponse.json();
+          console.log('Tasks data:', tasksJson);
+          setTasks(tasksJson.data || []);
+        }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching data:', error);
       }
     };
     
@@ -117,7 +135,7 @@ export function Sidebar({
       const response = await fetch("/api/lists")
       if (!response.ok) throw new Error("Failed to fetch lists")
       const data = await response.json()
-      setLists(data)
+      setLists(data || []) // API returns array directly
     } catch (error) {
       console.error("Error fetching lists:", error)
     }
@@ -129,7 +147,7 @@ export function Sidebar({
       const response = await fetch("/api/labels")
       if (!response.ok) throw new Error("Failed to fetch labels")
       const data = await response.json()
-      setLabels(data)
+      setLabels(data || []) // API returns array directly
     } catch (error) {
       console.error("Error fetching labels:", error)
     }
@@ -138,10 +156,10 @@ export function Sidebar({
   // Fetch tasks from API
   const fetchTasks = async () => {
     try {
-      const response = await fetch("/api/tasks")
+      const response = await fetch("/api/tasks?limit=1000") // Fetch all tasks without pagination
       if (!response.ok) throw new Error("Failed to fetch tasks")
       const data = await response.json()
-      setTasks(data)
+      setTasks(data.data || []) // Tasks API returns paginated response
     } catch (error) {
       console.error("Error fetching tasks:", error)
     }
@@ -280,7 +298,7 @@ export function Sidebar({
 
   // Get uncompleted task count for a list
   const getUncompletedTaskCount = (listId: string) => {
-    return tasks.filter(task => task.listId === listId && !task.completedAt).length
+    return safeTasks.filter(task => task.listId === listId && !task.completedAt).length
   }
 
   // Get overdue task count for today
@@ -288,7 +306,7 @@ export function Sidebar({
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
-    return tasks.filter(task => {
+    return safeTasks.filter(task => {
       if (task.completedAt) return false
       if (!task.deadline) return false
       
@@ -313,12 +331,52 @@ export function Sidebar({
       )
     : labels
 
+  // Calculate task counts for each view
+  const getTodayTaskCount = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return safeTasks.filter(task => {
+      if (!task.date || task.completedAt) return false
+      const taskDate = new Date(task.date)
+      taskDate.setHours(0, 0, 0, 0)
+      return taskDate.getTime() === today.getTime()
+    }).length
+  }
+
+  const getNext7DaysTaskCount = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const endDate = new Date(today)
+    endDate.setDate(today.getDate() + 7)
+    return safeTasks.filter(task => {
+      if (!task.date || task.completedAt) return false
+      const taskDate = new Date(task.date)
+      taskDate.setHours(0, 0, 0, 0)
+      return taskDate >= today && taskDate <= endDate
+    }).length
+  }
+
+  const getUpcomingTaskCount = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return safeTasks.filter(task => {
+      if (!task.date || task.completedAt) return false
+      const taskDate = new Date(task.date)
+      taskDate.setHours(0, 0, 0, 0)
+      return taskDate >= today
+    }).length
+  }
+
+  const getAllTaskCount = () => {
+    return safeTasks.filter(task => !task.completedAt).length
+  }
+
   // View options
   const views = [
-    { id: "today", label: "Today", icon: Calendar, badge: getOverdueTaskCount() },
-    { id: "next7days", label: "Next 7 Days", icon: CalendarClock },
-    { id: "upcoming", label: "Upcoming", icon: Clock },
-    { id: "all", label: "All", icon: CheckSquare },
+    { id: "today", label: "Today", icon: Calendar, badge: getTodayTaskCount() },
+    { id: "next7days", label: "Next 7 Days", icon: CalendarClock, badge: getNext7DaysTaskCount() },
+    { id: "upcoming", label: "Upcoming", icon: Clock, badge: getUpcomingTaskCount() },
+    { id: "all", label: "All", icon: CheckSquare, badge: getAllTaskCount() },
   ]
 
   return (

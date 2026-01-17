@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Add default user filter (TODO: Replace with actual user authentication)
-    where.userId = '1';
+    where.userId = 'cmki1ekso0000i4ezi4fhaecm';
     
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({

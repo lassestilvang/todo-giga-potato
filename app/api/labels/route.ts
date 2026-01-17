@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = {};
     // Add default user filter if not provided (TODO: Replace with actual user authentication)
-    where.userId = userId || '1';
+    where.userId = userId || 'cmki1ekso0000i4ezi4fhaecm';
 
     const labels = await prisma.label.findMany({
       where,

@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
 
     const where: any = {};
     // Add default user filter if not provided (TODO: Replace with actual user authentication)
-    where.userId = userId || '1';
+    // We're using 'cmki1ekso0000i4ezi4fhaecm' as the default user id since that's what the init-db script creates
+    where.userId = userId || 'cmki1ekso0000i4ezi4fhaecm';
 
     const lists = await prisma.list.findMany({
       where,

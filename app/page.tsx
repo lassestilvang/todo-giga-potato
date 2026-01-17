@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { MainContent } from "@/components/main-content"
 import { Navbar } from "@/components/navbar"
 import { Sidebar } from "@/components/sidebar"
+import { TaskManagement } from "@/components/task-management"
 
 type ViewType = "today" | "next7days" | "upcoming" | "all"
 
@@ -29,7 +29,11 @@ export default function Home() {
       />
       <div className="flex-1 flex flex-col">
         <Navbar />
-        <MainContent />
+        <TaskManagement 
+          activeView={activeView}
+          activeListId={activeListId}
+          activeLabelId={activeLabelId}
+        />
       </div>
     </div>
   )

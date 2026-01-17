@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Calendar,
   Settings,
-  Search,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { SearchComponent } from "@/components/search"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Navbar() {
   return (
@@ -89,19 +90,8 @@ export function Navbar() {
         </SheetContent>
       </Sheet>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <form className="ml-auto flex-1 sm:flex-initial">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <span className="sr-only">Search</span>
-            </div>
-            <input
-              type="search"
-              placeholder="Search tasks..."
-              className="flex h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:w-32 lg:w-64"
-            />
-          </div>
-        </form>
+        <SearchComponent />
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">

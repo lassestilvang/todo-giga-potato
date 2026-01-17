@@ -1,0 +1,56 @@
+uid=16_0 RootWebArea "Daily Task Planner" url="http://localhost:32754/"
+  uid=16_1 heading "Daily Tasks" level="1"
+  uid=16_2 textbox "Search lists and labels..."
+  uid=16_3 heading "VIEWS" level="2"
+  uid=16_4 button "Today"
+  uid=16_5 button "Next 7 Days"
+  uid=16_6 button "Upcoming"
+  uid=16_7 button "All 3"
+  uid=16_8 heading "LISTS" level="2"
+  uid=16_9 button
+  uid=16_10 button "📥 Inbox 3"
+    uid=16_11 button
+  uid=16_12 button "🏠 Personal"
+    uid=16_13 button
+  uid=16_14 button "☀️ Today"
+    uid=16_15 button
+  uid=16_16 button "💼 Work"
+    uid=16_17 button
+  uid=16_18 button "🛒 Shopping"
+    uid=16_19 button
+  uid=16_20 heading "LABELS" level="2"
+  uid=16_21 button
+  uid=16_22 button "High Priority"
+    uid=16_23 button
+  uid=16_24 button "Important"
+    uid=16_25 button
+  uid=16_26 button "Low"
+    uid=16_27 button
+  uid=16_28 button "Urgent"
+    uid=16_29 button
+  uid=16_30 button "Add Task"
+  uid=16_31 navigation
+    uid=16_32 link "Daily Task Planner" url="http://localhost:32754/#"
+      uid=16_33 StaticText "Daily Task Planner"
+    uid=16_34 link "Dashboard" url="http://localhost:32754/#"
+      uid=16_35 StaticText "Dashboard"
+    uid=16_36 link "Calendar" url="http://localhost:32754/#"
+      uid=16_37 StaticText "Calendar"
+    uid=16_38 link "Tasks" url="http://localhost:32754/#"
+      uid=16_39 StaticText "Tasks"
+  uid=16_40 StaticText "Search"
+  uid=16_41 searchbox "Search tasks..."
+  uid=16_42 button "Toggle theme" expandable haspopup="menu"
+  uid=16_43 button "Toggle user menu" expandable haspopup="menu"
+  uid=16_44 heading "Today" level="1"
+  uid=16_45 StaticText "0"
+  uid=16_46 StaticText " task"
+  uid=16_47 StaticText "s"
+  uid=16_48 button "Show Completed"
+  uid=16_49 textbox "Search tasks..."
+  uid=16_50 combobox expandable haspopup="listbox" value="All Priorities"
+  uid=16_51 combobox expandable haspopup="listbox" value="All Lists"
+  uid=16_52 combobox expandable haspopup="listbox" value="All Labels"
+  uid=16_53 combobox expandable haspopup="listbox" value="Date"
+  uid=16_54 StaticText "No tasks for today"
+  uid=16_55 button "Clear filters"
