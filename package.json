@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:init": "bun run scripts/init-db.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "test": "bun test app/test/*.test.ts"
   },
   "dependencies": {
     "@prisma/client": "5.19.1",
