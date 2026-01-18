@@ -35,6 +35,10 @@ This document outlines the remaining tasks, improvements, and future enhancement
 - [ ] Optimize database queries
 - [ ] Add loading skeleton components
 - [ ] Improve image optimization
+- [ ] Optimize LCP (Largest Contentful Paint) - currently 1112ms
+- [ ] Reduce CLS (Cumulative Layout Shift) - currently 0.11
+- [ ] Address render blocking requests
+- [ ] Fix forced reflow issues
 
 ### 5. Testing & Documentation
 - [x] Add integration tests
