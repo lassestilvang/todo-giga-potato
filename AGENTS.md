@@ -1,6 +1,9 @@
 # Agents Guide
 
+IMPORTANT: Do NOT use npm! This project uses Bun!
+
 ## Build/Lint/Test Commands
+
 - Dev server: `bun run dev`
 - Build: `bun run build`
 - Lint: `bun run lint`
@@ -10,6 +13,7 @@
 - DB commands: `db:init`, `db:reset`
 
 ## Architecture
+
 - Next.js 14 App Router
 - API routes in `app/api/` (tasks, lists, labels, attachments, reminders, search)
 - Prisma ORM with SQLite database
@@ -18,6 +22,7 @@
 - Tests in `app/test/` directory
 
 ## Code Style
+
 - ESLint: next/core-web-vitals
 - TypeScript: strict mode
 - Tailwind CSS: dark mode, CSS variables
@@ -26,3 +31,8 @@
 - Naming: camelCase (vars/funcs), PascalCase (components)
 - Error handling: Zod validation for API routes
 - File structure: Next.js app directory
+
+## Tools
+
+- Use context7 MAP for looking up documentation.
+- Use chrome-devtools for screenshots, debugging in browser, etc.
