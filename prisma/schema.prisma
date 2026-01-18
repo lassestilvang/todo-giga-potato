@@ -50,6 +50,7 @@ model Task {
   parentId         String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+  order            Int           @default(0)
   attachments      Attachment[]
   reminders        Reminder[]
   parentTask       Task?         @relation("ParentSubtasks", fields: [parentId], references: [id])

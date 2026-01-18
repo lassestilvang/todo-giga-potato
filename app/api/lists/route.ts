@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(list, { status: 201 });
   } catch (error) {
-    console.error('Error creating list:', error.message);
+    console.error('Error creating list:', error instanceof Error ? error.message : 'Unknown error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -178,6 +178,8 @@ export function SearchComponent() {
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className="absolute top-full left-0 z-50 mt-2 w-full lg:w-96"
+            role="listbox"
+            aria-label="Search results"
           >
             <Card className="overflow-hidden shadow-lg border">
               <div className="p-2 max-h-96 overflow-y-auto">
@@ -196,10 +198,19 @@ export function SearchComponent() {
                       <motion.button
                         key={result.id}
                         onClick={() => handleSelectResult(result)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSelectResult(result);
+                          }
+                        }}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors"
+                        className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        role="option"
+                        aria-label={result.name}
+                        tabIndex={0}
                       >
                         {/* Task Name */}
                         <div className="font-medium mb-1">

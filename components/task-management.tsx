@@ -10,6 +10,7 @@ import { TaskForm } from "@/components/task-form"
 import { TaskDetails } from "@/components/task-details"
 import { TaskView } from "@/components/task-view"
 import { TaskWithRelations, LabelWithRelations, ListWithRelations } from "@/lib/types/api"
+import toast from "react-hot-toast"
 
 interface TaskManagementProps {
   activeView: "today" | "next7days" | "upcoming" | "all"
@@ -100,9 +101,15 @@ export function TaskManagement({
 
       // Add labels if selected
       if (data.labels && data.labels.length > 0) {
-        taskData.labels = {
-          connect: data.labels.map((labelId: string) => ({ id: labelId }))
-        }
+        taskData.labels = data.labels
+      }
+
+      // Add subtasks if present
+      if (data.subtasks && data.subtasks.length > 0) {
+        taskData.subtasks = data.subtasks.map((subtask: any) => ({
+          name: subtask.name,
+          completedAt: subtask.completedAt,
+        }))
       }
 
       const response = await fetch("/api/tasks", {
@@ -119,8 +126,10 @@ export function TaskManagement({
 
       const newTask = await response.json()
       setTasks(prev => [...prev, newTask])
+      toast.success("Task created successfully!")
     } catch (error) {
       console.error("Error creating task:", error)
+      toast.error("Failed to create task")
     }
   }
 
@@ -140,9 +149,11 @@ export function TaskManagement({
         setTasks(prev => prev.map(task => 
           task.id === taskId ? { ...task, completedAt: new Date() } : task
         ))
+        toast.success("Task completed!")
       }
     } catch (error) {
       console.error("Error completing task:", error)
+      toast.error("Failed to complete task")
     }
   }
 
@@ -155,14 +166,50 @@ export function TaskManagement({
       if (response.ok) {
         setTasks(prev => prev.filter(task => task.id !== taskId))
         setSelectedTask(null)
+        toast.success("Task deleted successfully!")
       }
     } catch (error) {
       console.error("Error deleting task:", error)
+      toast.error("Failed to delete task")
     }
   }
 
   const handleEditTask = (task: TaskWithRelations) => {
     setSelectedTask(task)
+  }
+
+  const handleUpdateTaskOrder = async (updatedTasks: TaskWithRelations[]) => {
+    try {
+      // Update tasks with new order
+      const updatePromises = updatedTasks.map((task, index) =>
+        fetch(`/api/tasks/${task.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ order: index }),
+        })
+      )
+
+      await Promise.all(updatePromises)
+
+      // Update local state
+      setTasks(prevTasks => {
+        const updatedTaskMap = new Map()
+        updatedTasks.forEach((task, index) => {
+          updatedTaskMap.set(task.id, { ...task, order: index })
+        })
+
+        return prevTasks.map(task =>
+          updatedTaskMap.has(task.id) ? updatedTaskMap.get(task.id) : task
+        )
+      })
+
+      toast.success("Task order updated successfully!")
+    } catch (error) {
+      console.error("Error updating task order:", error)
+      toast.error("Failed to update task order")
+    }
   }
 
   return (
@@ -178,6 +225,7 @@ export function TaskManagement({
         onDelete={handleDeleteTask}
         availableLabels={labels}
         availableLists={lists}
+        onUpdateTaskOrder={handleUpdateTaskOrder}
       />
 
       {/* Create Task Form */}

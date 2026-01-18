@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { ListWithRelations, LabelWithRelations, TaskWithRelations } from "@/lib/types/api"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 // List color options
 const LIST_COLORS = [
@@ -595,11 +596,20 @@ function SidebarContent({
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
                   onClick={() => onViewChange(view.id as ViewType)}
-                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onViewChange(view.id as ViewType);
+                    }
+                  }}
+                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     activeView === view.id
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted"
                   }`}
+                  role="menuitem"
+                  aria-label={view.label}
+                  tabIndex={0}
                 >
                   <view.icon className="h-4 w-4 mr-3" />
                   <span className="flex-1">{view.label}</span>
@@ -642,11 +652,20 @@ function SidebarContent({
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
                   onClick={() => onListChange(list.id)}
-                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onListChange(list.id);
+                    }
+                  }}
+                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     activeListId === list.id
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted"
                   }`}
+                  role="menuitem"
+                  aria-label={list.name}
+                  tabIndex={0}
                 >
                   <span className="mr-3">{list.emoji || "📝"}</span>
                   <span className="flex-1">{list.name}</span>
@@ -669,6 +688,7 @@ function SidebarContent({
                       e.stopPropagation()
                       onEditList(list)
                     }}
+                    aria-label={`Edit ${list.name}`}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -700,11 +720,20 @@ function SidebarContent({
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
                   onClick={() => onLabelChange(label.id)}
-                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onLabelChange(label.id);
+                    }
+                  }}
+                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     activeLabelId === label.id
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted"
                   }`}
+                  role="menuitem"
+                  aria-label={label.name}
+                  tabIndex={0}
                 >
                   <Tag className="h-4 w-4 mr-3" />
                   <span className="flex-1">{label.name}</span>
@@ -716,6 +745,7 @@ function SidebarContent({
                       e.stopPropagation()
                       onEditLabel(label)
                     }}
+                    aria-label={`Edit ${label.name}`}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -752,6 +782,7 @@ function ListDialogForm({ initialData, onSubmit, onDelete }: ListDialogFormProps
   const [emoji, setEmoji] = useState(initialData?.emoji || DEFAULT_EMOJIS[0])
   const [color, setColor] = useState(initialData?.color || "blue")
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -765,9 +796,14 @@ function ListDialogForm({ initialData, onSubmit, onDelete }: ListDialogFormProps
   }
 
   const handleDelete = async () => {
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
     setIsDeleting(true)
     onDelete?.()
     setIsDeleting(false)
+    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -833,6 +869,16 @@ function ListDialogForm({ initialData, onSubmit, onDelete }: ListDialogFormProps
           </Button>
         )}
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete List"
+        description={`Are you sure you want to delete the list "${initialData?.name}"? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+      />
     </form>
   )
 }
@@ -848,6 +894,7 @@ function LabelDialogForm({ initialData, onSubmit, onDelete }: LabelDialogFormPro
   const [name, setName] = useState(initialData?.name || "")
   const [color, setColor] = useState(initialData?.color || "blue")
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -860,9 +907,14 @@ function LabelDialogForm({ initialData, onSubmit, onDelete }: LabelDialogFormPro
   }
 
   const handleDelete = async () => {
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
     setIsDeleting(true)
     onDelete?.()
     setIsDeleting(false)
+    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -910,6 +962,16 @@ function LabelDialogForm({ initialData, onSubmit, onDelete }: LabelDialogFormPro
           </Button>
         )}
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Label"
+        description={`Are you sure you want to delete the label "${initialData?.name}"? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+      />
     </form>
   )
 }

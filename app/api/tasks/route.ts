@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
           subtasks: true,
           attachments: true,
           reminders: true,
+          history: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -87,6 +88,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Recurring pattern schema for API validation
+const apiRecurringPatternSchema = z.object({
+  type: z.enum(["daily", "weekly", "weekday", "monthly", "yearly", "custom"]),
+  interval: z.number().min(1).default(1),
+  daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
+  dayOfMonth: z.number().min(1).max(31).optional(),
+  month: z.number().min(1).max(12).optional(),
+  endDate: z.string().optional(),
+})
+
 // POST /api/tasks - Create new task
 const createTaskSchema = z.object({
   name: z.string().min(1, 'Task name is required'),
@@ -97,37 +108,112 @@ const createTaskSchema = z.object({
   actualTime: z.number().optional(),
   priority: z.number().default(0),
   isRecurring: z.boolean().default(false),
-  recurringPattern: z.string().optional(),
+  recurringPattern: z.union([
+    z.string(),
+    apiRecurringPatternSchema,
+  ]).optional(),
   listId: z.string().min(1, 'List ID is required'),
   userId: z.string().min(1, 'User ID is required'),
   labels: z.array(z.string()).optional(),
-});
+  subtasks: z.array(z.object({
+    name: z.string().min(1),
+  })).optional(),
+  reminders: z.array(z.string()).optional(),
+}).refine(data => {
+  if (data.isRecurring && !data.recurringPattern) {
+    return false
+  }
+  return true
+}, {
+  message: "Recurring pattern is required for recurring tasks",
+  path: ["recurringPattern"],
+})
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createTaskSchema.parse(body);
 
-    const { labels, ...taskData } = validatedData;
+    // Parse and validate recurring pattern
+    let parsedRecurringPattern = validatedData.recurringPattern
+    if (validatedData.isRecurring) {
+      if (typeof validatedData.recurringPattern === "string") {
+        try {
+          parsedRecurringPattern = JSON.parse(validatedData.recurringPattern)
+        } catch (e) {
+          // If JSON parsing fails, treat as legacy string format
+          const allowedTypes = ["daily", "weekly", "weekday", "monthly", "yearly", "custom"]
+          const isAllowedType = allowedTypes.includes(validatedData.recurringPattern.toLowerCase())
+          
+          parsedRecurringPattern = {
+            type: isAllowedType ? (validatedData.recurringPattern.toLowerCase() as "daily" | "weekly" | "weekday" | "monthly" | "yearly" | "custom") : "custom",
+            interval: 1,
+          }
+        }
+      }
+      
+      // Validate parsed recurring pattern
+      apiRecurringPatternSchema.parse(parsedRecurringPattern)
+    }
+
+    const { labels, subtasks, reminders, recurringPattern, ...taskData } = validatedData;
 
     const task = await prisma.task.create({
       data: {
         ...taskData,
+        recurringPattern: JSON.stringify(parsedRecurringPattern),
         ...(taskData.date ? { date: new Date(taskData.date) } : {}),
         ...(taskData.deadline ? { deadline: new Date(taskData.deadline) } : {}),
         labels: labels ? {
           connect: labels.map((labelId: string) => ({ id: labelId })),
         } : undefined,
+        subtasks: subtasks ? {
+          create: subtasks.map((subtask: any) => ({
+            name: subtask.name,
+            userId: taskData.userId,
+            listId: taskData.listId,
+          })),
+        } : undefined,
+        reminders: reminders ? {
+          create: reminders.map((datetime: string) => ({
+            datetime: new Date(datetime),
+          })),
+        } : undefined,
       },
       include: {
         list: true,
         labels: true,
+        subtasks: true,
+        attachments: true,
+        reminders: true,
       },
     });
 
-    return NextResponse.json(task, { status: 201 });
+    // Create task history entry for task creation
+    await prisma.taskHistory.create({
+      data: {
+        taskId: task.id,
+        action: 'created',
+        changedBy: task.userId,
+      },
+    });
+
+    // Include history in response
+    const taskWithHistory = await prisma.task.findUnique({
+      where: { id: task.id },
+      include: {
+        list: true,
+        labels: true,
+        subtasks: true,
+        attachments: true,
+        reminders: true,
+        history: true,
+      },
+    });
+
+    return NextResponse.json(taskWithHistory, { status: 201 });
   } catch (error) {
-    console.error('Error creating task:', error.message);
+    console.error('Error creating task:', error instanceof Error ? error.message : 'Unknown error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -36,7 +36,7 @@ export async function getTaskById(taskId: string) {
 export async function createTask(data: any) {
   const { reminders, labels, attachments, subtasks, ...taskData } = data;
   
-  return prisma.task.create({
+  const task = await prisma.task.create({
     data: {
       ...taskData,
       reminders: reminders ? { create: reminders } : undefined,
@@ -51,9 +51,43 @@ export async function createTask(data: any) {
       attachments: true,
     },
   });
+
+  // Create task history entry
+  await prisma.taskHistory.create({
+    data: {
+      taskId: task.id,
+      action: 'created',
+      changedBy: taskData.userId,
+    },
+  });
+
+  // Include history in response
+  return prisma.task.findUnique({
+    where: { id: task.id },
+    include: {
+      list: true,
+      labels: true,
+      reminders: true,
+      attachments: true,
+      subtasks: true,
+      history: true,
+    },
+  });
 }
 
 export async function updateTask(id: string, data: any) {
+  // Get old task data for comparison
+  const oldTask = await prisma.task.findUnique({
+    where: { id },
+    include: {
+      list: true,
+      labels: true,
+      reminders: true,
+      attachments: true,
+      subtasks: true,
+    },
+  });
+
   const { reminders, labels, attachments, subtasks, ...taskData } = data;
   
   const updateData: any = { ...taskData };
@@ -78,7 +112,53 @@ export async function updateTask(id: string, data: any) {
     };
   }
   
-  return prisma.task.update({
+  if (subtasks) {
+    // First, get existing subtasks
+    const existingSubtasks = await prisma.task.findUnique({
+      where: { id },
+      select: { subtasks: { select: { id: true } } },
+    });
+
+    // Delete subtasks not in the new list
+    const existingSubtaskIds = existingSubtasks?.subtasks.map((s) => s.id) || [];
+    const newSubtaskIds = subtasks.filter((s: any) => s.id).map((s: any) => s.id);
+    const subtasksToDelete = existingSubtaskIds.filter((subtaskId) => !newSubtaskIds.includes(subtaskId));
+    
+    if (subtasksToDelete.length > 0) {
+      await prisma.task.deleteMany({
+        where: { id: { in: subtasksToDelete } },
+      });
+    }
+
+    // Update existing subtasks and create new ones
+    const subtaskOperations = subtasks.map((subtask: any) => {
+      if (subtask.id) {
+        // Update existing subtask
+        return prisma.task.update({
+          where: { id: subtask.id },
+          data: {
+            name: subtask.name,
+            completedAt: subtask.completedAt ? new Date(subtask.completedAt) : null,
+          },
+        });
+      } else {
+        // Create new subtask
+        return prisma.task.create({
+          data: {
+            name: subtask.name,
+            userId: data.userId,
+            listId: data.listId,
+            parentId: id,
+            completedAt: subtask.completedAt ? new Date(subtask.completedAt) : null,
+          },
+        });
+      }
+    });
+
+    await Promise.all(subtaskOperations);
+  }
+  
+  const task = await prisma.task.update({
     where: { id },
     data: updateData,
     include: {
@@ -86,11 +166,41 @@ export async function updateTask(id: string, data: any) {
       labels: true,
       reminders: true,
       attachments: true,
+      subtasks: true,
+    },
+  });
+
+  // Create task history entry
+  await prisma.taskHistory.create({
+    data: {
+      taskId: task.id,
+      action: 'updated',
+      oldValue: JSON.stringify(oldTask),
+      newValue: JSON.stringify(task),
+      changedBy: data.userId,
+    },
+  });
+
+  // Include history in response
+  return prisma.task.findUnique({
+    where: { id: task.id },
+    include: {
+      list: true,
+      labels: true,
+      reminders: true,
+      attachments: true,
+      subtasks: true,
+      history: true,
     },
   });
 }
 
 export async function deleteTask(id: string) {
+  // Delete task history first to avoid foreign key constraints
+  await prisma.taskHistory.deleteMany({
+    where: { taskId: id },
+  });
+
   return prisma.task.delete({
     where: { id },
   });
@@ -150,7 +260,21 @@ export async function updateList(id: string, data: any) {
 }
 
 export async function deleteList(id: string) {
-  // First delete all tasks associated with the list
+  // First get all tasks in the list
+  const tasks = await prisma.task.findMany({
+    where: { listId: id },
+    select: { id: true },
+  });
+
+  // Delete task history for all tasks in the list
+  const taskIds = tasks.map(task => task.id);
+  if (taskIds.length > 0) {
+    await prisma.taskHistory.deleteMany({
+      where: { taskId: { in: taskIds } },
+    });
+  }
+
+  // Delete all tasks associated with the list
   await prisma.task.deleteMany({
     where: { listId: id },
   });

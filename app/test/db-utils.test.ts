@@ -63,6 +63,11 @@ describe('Database Operations', () => {
 
   // Cleanup test data after each test
   afterEach(async () => {
+    // Delete task history first to avoid foreign key constraints
+    await prisma.taskHistory.deleteMany({
+      where: { taskId: testTaskId },
+    });
+
     // Delete test task
     await prisma.task.deleteMany({
       where: { id: testTaskId },

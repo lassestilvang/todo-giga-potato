@@ -12,7 +12,8 @@ import {
   Paperclip, 
   MoreHorizontal,
   AlertCircle,
-  Clock3
+  Clock3,
+  GripVertical
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { TaskWithRelations } from "@/lib/types/api"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 interface TaskCardProps {
   task: TaskWithRelations
@@ -35,6 +39,22 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 999 : 1,
+  }
   
   // Calculate subtask completion
   const safeSubtasks = task.subtasks || []
@@ -70,6 +90,8 @@ export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) 
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
+      style={style}
+      ref={setNodeRef}
     >
       <Card
         className={`p-4 transition-all duration-200 ${
@@ -82,13 +104,26 @@ export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) 
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
+            {/* Drag Handle */}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                title="Drag to reorder"
+                aria-label="Drag to reorder task"
+                tabIndex={0}
+              >
+                <GripVertical className="h-5 w-5" />
+              </button>
+            </div>
             {/* Task Header */}
             <div className="flex items-center gap-2 mb-2">
-              <h3 className={`font-medium text-base transition-all duration-200 ${
+              <h2 className={`font-medium text-base transition-all duration-200 ${
                 task.completedAt ? "line-through text-muted-foreground" : "text-foreground"
               }`}>
                 {task.name}
-              </h3>
+              </h2>
               <Badge className={getPriorityColor(task.priority)}>
                 {getPriorityLabel(task.priority)}
               </Badge>
@@ -177,13 +212,13 @@ export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) 
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More options">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => onDelete?.(task.id)}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -194,6 +229,18 @@ export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) 
           </div>
         </div>
       </Card>
+      
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Task"
+        description={`Are you sure you want to delete the task "${task.name}"? This action cannot be undone.`}
+        onConfirm={() => {
+          onDelete?.(task.id)
+          setIsDeleteDialogOpen(false)
+        }}
+      />
     </motion.div>
   )
 }

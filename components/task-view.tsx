@@ -11,6 +11,21 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { TaskCard } from "@/components/task-card"
 import { TaskWithRelations } from "@/lib/types/api"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
 
 type ViewType = "today" | "next7days" | "upcoming" | "all"
 
@@ -26,6 +41,7 @@ interface TaskViewProps {
   onDelete: (taskId: string) => void
   availableLabels: any[]
   availableLists: any[]
+  onUpdateTaskOrder?: (tasks: TaskWithRelations[]) => void
 }
 
 export function TaskView({
@@ -38,6 +54,7 @@ export function TaskView({
   onDelete,
   availableLabels,
   availableLists,
+  onUpdateTaskOrder,
 }: TaskViewProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterPriority, setFilterPriority] = useState<string | null>(null)
@@ -45,6 +62,33 @@ export function TaskView({
   const [sortBy, setSortBy] = useState<SortBy>("date")
   const [filterLabel, setFilterLabel] = useState<string | null>(null)
   const [filterList, setFilterList] = useState<string | null>(null)
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px threshold before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end event
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id && onUpdateTaskOrder) {
+      const activeIndex = sortedTasks.findIndex((task) => task.id === active.id)
+      const overIndex = sortedTasks.findIndex((task) => task.id === over?.id)
+
+      if (activeIndex !== -1 && overIndex !== -1) {
+        const newTasks = arrayMove(sortedTasks, activeIndex, overIndex)
+        onUpdateTaskOrder(newTasks)
+      }
+    }
+  }
 
   // Get today's date at 00:00:00 for consistent date comparisons
   const today = useMemo(() => {
@@ -102,6 +146,7 @@ export function TaskView({
         taskDate.setHours(0, 0, 0, 0)
         matchesDate = taskDate >= today
       }
+      // For "all" view, we don't filter by date
 
       return matchesSearch && matchesPriority && matchesList && matchesLabel && 
              matchesActiveList && matchesActiveLabel && matchesDate
@@ -126,6 +171,7 @@ export function TaskView({
     return tasksToSort.sort((a, b) => {
       switch (sortBy) {
         case "date":
+          if (!a.date && !b.date) return 0
           if (!a.date) return 1
           if (!b.date) return -1
           return new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -215,7 +261,7 @@ export function TaskView({
         </div>
         
         <Select value={filterPriority || "all"} onValueChange={(value) => setFilterPriority(value === "all" ? null : value)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="Priority filter">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -228,7 +274,7 @@ export function TaskView({
         </Select>
 
         <Select value={filterList || "all"} onValueChange={(value) => setFilterList(value === "all" ? null : value)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="List filter">
             <SelectValue placeholder="List" />
           </SelectTrigger>
           <SelectContent>
@@ -242,7 +288,7 @@ export function TaskView({
         </Select>
 
         <Select value={filterLabel || "all"} onValueChange={(value) => setFilterLabel(value === "all" ? null : value)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="Label filter">
             <SelectValue placeholder="Label" />
           </SelectTrigger>
           <SelectContent>
@@ -269,48 +315,59 @@ export function TaskView({
       </motion.div>
 
       {/* Tasks List */}
-      <div className="grid gap-4">
-        {sortedTasks.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-12"
-          >
-            {(() => {
-              const Icon = viewInfo.icon
-              return <Icon className={`h-16 w-16 ${viewInfo.color} mx-auto mb-4 opacity-20`} />
-            })()}
-            <p className="text-muted-foreground mb-4">
-              {searchQuery || filterPriority || filterLabel || filterList 
-                ? "No tasks match your filters" 
-                : `No tasks for ${viewInfo.title.toLowerCase()}`}
-            </p>
-            <Button 
-              variant="ghost" 
-              onClick={() => {
-                setSearchQuery("")
-                setFilterPriority(null)
-                setFilterLabel(null)
-                setFilterList(null)
-              }}
-            >
-              Clear filters
-            </Button>
-          </motion.div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {sortedTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onComplete={onComplete}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))}
-          </AnimatePresence>
-        )}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={sortedTasks.map((task) => task.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="grid gap-4">
+            {sortedTasks.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12"
+              >
+                {(() => {
+                  const Icon = viewInfo.icon
+                  return <Icon className={`h-16 w-16 ${viewInfo.color} mx-auto mb-4 opacity-20`} />
+                })()}
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery || filterPriority || filterLabel || filterList 
+                    ? "No tasks match your filters" 
+                    : `No tasks for ${viewInfo.title.toLowerCase()}`}
+                </p>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => {
+                    setSearchQuery("")
+                    setFilterPriority(null)
+                    setFilterLabel(null)
+                    setFilterList(null)
+                  }}
+                >
+                  Clear filters
+                </Button>
+              </motion.div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {sortedTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={onComplete}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </AnimatePresence>
+            )}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   )
 }

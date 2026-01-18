@@ -17,10 +17,10 @@ import { Separator } from "@/components/ui/separator"
 interface TaskHistoryItem {
   id: string
   action: string
-  oldValue?: string
-  newValue?: string
-  changedBy?: string
-  createdAt: string
+  oldValue?: string | null
+  newValue?: string | null
+  changedBy?: string | null
+  createdAt: string | Date
 }
 
 interface TaskHistoryProps {
@@ -52,8 +52,8 @@ export function TaskHistory({ history }: TaskHistoryProps) {
   }
 
   // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+  const formatDate = (dateInput: string | Date) => {
+    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
     const diffMins = Math.floor(diffMs / 60000)

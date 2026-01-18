@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       query: q,
     });
   } catch (error) {
-    console.error('Error searching tasks:', error.message);
+    console.error('Error searching tasks:', error instanceof Error ? error.message : 'Unknown error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

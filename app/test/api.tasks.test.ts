@@ -37,6 +37,11 @@ describe('Tasks API', () => {
   });
 
   afterEach(async () => {
+    // Delete task history first to avoid foreign key constraints
+    await prisma.taskHistory.deleteMany({
+      where: { taskId: testTaskId },
+    });
+
     // Cleanup test data
     await prisma.task.deleteMany({
       where: { id: testTaskId },

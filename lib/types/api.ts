@@ -1,13 +1,13 @@
-import { Task, List, Label } from '@prisma/client';
+import { Task, List, Label, Attachment, Reminder, TaskHistory } from '@prisma/client';
 
 // Base entity types with relations
 export type TaskWithRelations = Task & {
   list: List;
   labels: Label[];
   subtasks: Task[];
-  attachments: any[];
-  reminders: any[];
-  history: any[];
+  attachments: Attachment[];
+  reminders: Reminder[];
+  history: TaskHistory[];
 };
 
 export type ListWithRelations = List & {

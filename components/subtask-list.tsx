@@ -108,8 +108,9 @@ export function SubtaskList({
                     variant="ghost"
                     size="icon"
                     onClick={() => handleStartEdit(subtask)}
-                    className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="Edit subtask"
+                    aria-label={`Edit ${subtask.name}`}
                   >
                     <Edit2 className="h-3 w-3" />
                   </Button>
@@ -117,8 +118,9 @@ export function SubtaskList({
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete?.(subtask.id)}
-                    className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="Delete subtask"
+                    aria-label={`Delete ${subtask.name}`}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>

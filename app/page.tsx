@@ -27,14 +27,14 @@ export default function Home() {
         onLabelChange={setActiveLabelId}
         onAddTask={handleAddTask}
       />
-      <div className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col">
         <Navbar />
         <TaskManagement 
           activeView={activeView}
           activeListId={activeListId}
           activeLabelId={activeLabelId}
         />
-      </div>
+      </main>
     </div>
   )
 }

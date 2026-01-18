@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(label, { status: 201 });
   } catch (error) {
-    console.error('Error creating label:', error.message);
+    console.error('Error creating label:', error instanceof Error ? error.message : 'Unknown error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

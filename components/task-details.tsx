@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Trash2,
   ExternalLink,
-  X
+  X,
+  List as ListIcon,
+  CalendarClock
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,7 +33,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskHistory } from "@/components/task-history"
 import { TaskForm } from "@/components/task-form"
+import { SubtaskList } from "@/components/subtask-list"
 import { TaskWithRelations } from "@/lib/types/api"
+import toast from "react-hot-toast"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 interface TaskDetailsProps {
   task: TaskWithRelations
@@ -51,6 +56,7 @@ export function TaskDetails({
   availableLabels 
 }: TaskDetailsProps) {
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Calculate subtask completion
   const completedSubtasks = task.subtasks.filter(subtask => subtask.completedAt).length
@@ -97,9 +103,9 @@ export function TaskDetails({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{task.name}</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-2xl font-bold">{task.name}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
@@ -109,12 +115,18 @@ export function TaskDetails({
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="space-y-4 py-4">
-            {/* Task Status */}
-            <div className="flex items-center justify-between">
-              <Badge className={getPriorityColor(task.priority)}>
-                {getPriorityLabel(task.priority)}
-              </Badge>
+          <TabsContent value="details" className="space-y-6 py-4">
+            {/* Task Status and List */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Badge className={getPriorityColor(task.priority)}>
+                  {getPriorityLabel(task.priority)}
+                </Badge>
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <ListIcon className="h-3 w-3" />
+                  {task.list.name}
+                </Badge>
+              </div>
               {!task.completedAt && (
                 <Button
                   variant="ghost"
@@ -130,16 +142,16 @@ export function TaskDetails({
 
             {/* Description */}
             {task.description && (
-              <div className="space-y-1.5">
-                <h4 className="font-medium">Description</h4>
-                <p className="text-muted-foreground text-sm">
+              <div className="space-y-2">
+                <h4 className="font-medium text-lg">Description</h4>
+                <p className="text-muted-foreground leading-relaxed">
                   {task.description}
                 </p>
               </div>
             )}
 
             {/* Task Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {task.date && (
                 <div className="space-y-1.5">
                   <h4 className="font-medium text-sm flex items-center gap-1">
@@ -189,16 +201,42 @@ export function TaskDetails({
               )}
             </div>
 
+            {/* Additional Task Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              <div className="space-y-1.5">
+                <h4 className="font-medium text-sm flex items-center gap-1">
+                  <CalendarClock className="h-4 w-4" />
+                  Created
+                </h4>
+                <p className="text-muted-foreground text-sm">
+                  {new Date(task.createdAt).toLocaleString()}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="font-medium text-sm flex items-center gap-1">
+                  <CalendarClock className="h-4 w-4" />
+                  Updated
+                </h4>
+                <p className="text-muted-foreground text-sm">
+                  {new Date(task.updatedAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
             {/* Labels */}
             {task.labels.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-1">
                   <Tag className="h-4 w-4" />
                   Labels
                 </h4>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-2">
                   {task.labels.map((label) => (
-                    <Badge key={label.id} className="bg-gray-100 text-gray-700">
+                    <Badge 
+                      key={label.id} 
+                      className={`${label.color} text-white hover:opacity-90`}
+                    >
                       {label.name}
                     </Badge>
                   ))}
@@ -219,27 +257,98 @@ export function TaskDetails({
               </div>
             )}
 
+            {/* Reminders */}
+            {task.reminders.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Reminders
+                </h4>
+                <div className="space-y-2">
+                  {task.reminders.map((reminder) => (
+                    <div
+                      key={reminder.id}
+                      className="flex items-center justify-between text-sm text-muted-foreground p-2 bg-gray-50 rounded-md"
+                    >
+                      <span>{new Date(reminder.datetime).toLocaleString()}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/reminders/${reminder.id}`, {
+                              method: 'DELETE',
+                            });
+                            if (response.ok) {
+                              toast.success("Reminder deleted!")
+                              window.location.reload();
+                            } else {
+                              toast.error("Failed to delete reminder")
+                            }
+                          } catch (error) {
+                            console.error('Error deleting reminder:', error);
+                            toast.error("Failed to delete reminder")
+                          }
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Attachments */}
             {task.attachments.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-1">
                   <Paperclip className="h-4 w-4" />
                   Attachments
                 </h4>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {task.attachments.map((attachment) => (
                     <div
                       key={attachment.id}
-                      className="flex items-center justify-between text-sm text-muted-foreground"
+                      className="flex items-center justify-between text-sm text-muted-foreground p-2 bg-gray-50 rounded-md"
                     >
                       <span>{attachment.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => {
+                            window.open(attachment.url, '_blank');
+                          }}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/attachments/${attachment.id}`, {
+                                method: 'DELETE',
+                              });
+                              if (response.ok) {
+                                toast.success("Attachment deleted!")
+                                window.location.reload();
+                              } else {
+                                toast.error("Failed to delete attachment")
+                              }
+                            } catch (error) {
+                              console.error('Error deleting attachment:', error);
+                              toast.error("Failed to delete attachment")
+                            }
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -250,7 +359,7 @@ export function TaskDetails({
           <TabsContent value="subtasks" className="space-y-4 py-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium">Subtasks</h4>
+                <h4 className="font-medium text-lg">Subtasks</h4>
                 <span className="text-sm text-muted-foreground">
                   {completedSubtasks}/{task.subtasks.length} completed
                 </span>
@@ -258,23 +367,13 @@ export function TaskDetails({
               <Progress value={subtaskProgress} className="h-2" />
               
               <div className="space-y-2 mt-3">
-                {task.subtasks.map((subtask) => (
-                  <div
-                    key={subtask.id}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50"
-                  >
-                    <CheckCircle2 
-                      className={`h-4 w-4 ${
-                        subtask.completedAt ? "text-green-600" : "text-gray-300"
-                      }`}
-                    />
-                    <span className={`text-sm ${
-                      subtask.completedAt ? "line-through text-muted-foreground" : "text-foreground"
-                    }`}>
-                      {subtask.name}
-                    </span>
-                  </div>
-                ))}
+                <SubtaskList
+                  subtasks={task.subtasks}
+                  onAdd={(name) => console.log("Add subtask:", name)}
+                  onUpdate={(id, name) => console.log("Update subtask:", id, name)}
+                  onDelete={(id) => console.log("Delete subtask:", id)}
+                  onToggle={(id, completed) => console.log("Toggle subtask:", id, completed)}
+                />
               </div>
             </div>
           </TabsContent>
@@ -284,10 +383,10 @@ export function TaskDetails({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="flex gap-2">
+        <DialogFooter className="flex gap-2 pt-4">
           <Button
             variant="ghost"
-            onClick={() => onDelete?.(task.id)}
+            onClick={() => setIsDeleteDialogOpen(true)}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="h-4 w-4 mr-1" />
@@ -306,6 +405,18 @@ export function TaskDetails({
           </DialogClose>
         </DialogFooter>
       </DialogContent>
+      
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Task"
+        description={`Are you sure you want to delete the task "${task.name}"? This action cannot be undone.`}
+        onConfirm={() => {
+          onDelete?.(task.id)
+          setIsDeleteDialogOpen(false)
+        }}
+      />
     </Dialog>
   )
 }
