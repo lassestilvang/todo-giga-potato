@@ -16,17 +16,20 @@ interface TaskManagementProps {
   activeView: "today" | "next7days" | "upcoming" | "all"
   activeListId: string | null
   activeLabelId: string | null
+  isCreateFormOpen: boolean
+  setIsCreateFormOpen: (open: boolean) => void
 }
 
 export function TaskManagement({
   activeView,
   activeListId,
   activeLabelId,
+  isCreateFormOpen,
+  setIsCreateFormOpen,
 }: TaskManagementProps) {
   const [tasks, setTasks] = useState<TaskWithRelations[]>([])
   const [labels, setLabels] = useState<LabelWithRelations[]>([])
   const [lists, setLists] = useState<ListWithRelations[]>([])
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterPriority, setFilterPriority] = useState<string | null>(null)

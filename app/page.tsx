@@ -11,9 +11,10 @@ export default function Home() {
   const [activeView, setActiveView] = useState<ViewType>("today")
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeLabelId, setActiveLabelId] = useState<string | null>(null)
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
 
   const handleAddTask = () => {
-    console.log("Add task")
+    setIsCreateFormOpen(true)
   }
 
   return (
@@ -27,12 +28,14 @@ export default function Home() {
         onLabelChange={setActiveLabelId}
         onAddTask={handleAddTask}
       />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col md:ml-64">
         <Navbar />
         <TaskManagement 
           activeView={activeView}
           activeListId={activeListId}
           activeLabelId={activeLabelId}
+          isCreateFormOpen={isCreateFormOpen}
+          setIsCreateFormOpen={setIsCreateFormOpen}
         />
       </main>
     </div>
