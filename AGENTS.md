@@ -1,6 +1,6 @@
 # Agents Guide
 
-IMPORTANT: Do NOT use npm! This project uses Bun!
+IMPORTANT: Do NOT use npm! This project uses Bun! After code changes then always make sure the project lints and builds!
 
 ## Build/Lint/Test Commands
 
