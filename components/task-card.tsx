@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { motion } from "framer-motion"
 import { 
   CheckCircle2, 
@@ -37,7 +37,8 @@ interface TaskCardProps {
   onDelete?: (taskId: string) => void
 }
 
-export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) {
+export const TaskCard = React.forwardRef<HTMLDivElement, TaskCardProps>(
+  ({ task, onComplete, onEdit, onDelete }, ref) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const {
@@ -243,4 +244,6 @@ export function TaskCard({ task, onComplete, onEdit, onDelete }: TaskCardProps) 
       />
     </motion.div>
   )
-}
+})
+
+TaskCard.displayName = "TaskCard"

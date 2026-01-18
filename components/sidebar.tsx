@@ -645,54 +645,55 @@ function SidebarContent({
           <div className="space-y-1">
             <AnimatePresence mode="popLayout">
               {lists.map((list) => (
-                <motion.button
+                <motion.div
                   key={list.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
-                  onClick={() => onListChange(list.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onListChange(list.id);
-                    }
-                  }}
-                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    activeListId === list.id
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted"
-                  }`}
-                  role="menuitem"
-                  aria-label={list.name}
-                  tabIndex={0}
+                  className="group"
                 >
-                  <span className="mr-3">{list.emoji || "📝"}</span>
-                  <span className="flex-1">{list.name}</span>
-                  {getUncompletedTaskCount(list.id) > 0 && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    >
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        {getUncompletedTaskCount(list.id)}
-                      </Badge>
-                    </motion.div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEditList(list)
+                  <button
+                    onClick={() => onListChange(list.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onListChange(list.id);
+                      }
                     }}
-                    aria-label={`Edit ${list.name}`}
+                    className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      activeListId === list.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                    role="menuitem"
+                    aria-label={list.name}
+                    tabIndex={0}
                   >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </motion.button>
+                    <span className="mr-3">{list.emoji || "📝"}</span>
+                    <span className="flex-1">{list.name}</span>
+                    {getUncompletedTaskCount(list.id) > 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      >
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {getUncompletedTaskCount(list.id)}
+                        </Badge>
+                      </motion.div>
+                    )}
+                    <div
+                      className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEditList(list)
+                      }}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </div>
+                  </button>
+                </motion.div>
               ))}
             </AnimatePresence>
           </div>
@@ -713,43 +714,44 @@ function SidebarContent({
           <div className="space-y-1">
             <AnimatePresence mode="popLayout">
               {labels.map((label) => (
-                <motion.button
+                <motion.div
                   key={label.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
-                  onClick={() => onLabelChange(label.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onLabelChange(label.id);
-                    }
-                  }}
-                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    activeLabelId === label.id
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted"
-                  }`}
-                  role="menuitem"
-                  aria-label={label.name}
-                  tabIndex={0}
+                  className="group"
                 >
-                  <Tag className="h-4 w-4 mr-3" />
-                  <span className="flex-1">{label.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEditLabel(label)
+                  <button
+                    onClick={() => onLabelChange(label.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onLabelChange(label.id);
+                      }
                     }}
-                    aria-label={`Edit ${label.name}`}
+                    className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      activeLabelId === label.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                    role="menuitem"
+                    aria-label={label.name}
+                    tabIndex={0}
                   >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </motion.button>
+                    <Tag className="h-4 w-4 mr-3" />
+                    <span className="flex-1">{label.name}</span>
+                    <div
+                      className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEditLabel(label)
+                      }}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </div>
+                  </button>
+                </motion.div>
               ))}
             </AnimatePresence>
           </div>
