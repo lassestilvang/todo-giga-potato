@@ -44,6 +44,8 @@ jobs:
         run: bun install
 
       - name: Run tests
+        env:
+          DATABASE_URL: "file:./test.db"
         run: bun test
 
   # Job 3: Deploy to Vercel (only on main branch push)
