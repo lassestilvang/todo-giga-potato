@@ -302,7 +302,7 @@ export function TaskView({
         </Select>
 
         <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="Sort by">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
