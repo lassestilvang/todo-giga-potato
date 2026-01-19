@@ -43,6 +43,13 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Initialize test database
+        env:
+          DATABASE_URL: "file:./test.db"
+        run: |
+          bun run prisma:generate
+          bun run prisma:migrate
+
       - name: Run tests
         env:
           DATABASE_URL: "file:./test.db"
