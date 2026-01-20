@@ -30,8 +30,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(lists);
   } catch (error) {
     console.error('Error fetching lists:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to fetch lists' },
+      { 
+        error: 'Failed to fetch lists', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      },
       { status: 500 }
     );
   }
