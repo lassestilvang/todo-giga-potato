@@ -13,6 +13,7 @@ async function initializeDatabase() {
       
       const defaultUser = await prisma.user.create({
         data: {
+          id: 'cmki1ekso0000i4ezi4fhaecm',
           email: 'demo@example.com',
           name: 'Demo User',
           avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
