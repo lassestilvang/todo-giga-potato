@@ -266,9 +266,20 @@ export async function deleteList(id: string) {
     select: { id: true },
   });
 
-  // Delete task history for all tasks in the list
+  // Delete all related records for each task
   const taskIds = tasks.map(task => task.id);
   if (taskIds.length > 0) {
+    // Delete attachments
+    await prisma.attachment.deleteMany({
+      where: { taskId: { in: taskIds } },
+    });
+
+    // Delete reminders
+    await prisma.reminder.deleteMany({
+      where: { taskId: { in: taskIds } },
+    });
+
+    // Delete task history
     await prisma.taskHistory.deleteMany({
       where: { taskId: { in: taskIds } },
     });
