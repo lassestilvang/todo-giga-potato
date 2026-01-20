@@ -11,6 +11,9 @@ describe('Reminders API', () => {
 
   // Create a test task before each test
   beforeEach(async () => {
+    // Delete all existing reminders to ensure test isolation
+    await prisma.reminder.deleteMany({});
+    
     // Create a test list to associate with tasks
     const testList = await prisma.list.create({
       data: {
