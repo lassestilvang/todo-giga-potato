@@ -1,13 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import prisma from '@/lib/prisma';
+import { createUser } from '@/lib/db-utils';
 
 const API_BASE_URL = 'http://localhost:32754/api';
-const DEFAULT_USER_ID = 'cmki1ekso0000i4ezi4fhaecm';
+let DEFAULT_USER_ID: string;
 
 describe('Labels API', () => {
   let testLabelId: string;
 
   beforeEach(async () => {
+    // Create a test user first with unique email
+    const testEmail = `test-labels-${Date.now()}@example.com`;
+    const testUser = await createUser({
+      email: testEmail,
+      name: 'Test Labels User',
+    });
+    DEFAULT_USER_ID = testUser.id;
+
     // Create a test label for update/delete tests
     const testLabel = await prisma.label.create({
       data: {
@@ -20,10 +29,20 @@ describe('Labels API', () => {
   });
 
   afterEach(async () => {
-    // Cleanup test data
-    await prisma.label.deleteMany({
-      where: { id: testLabelId },
+    // Manually delete all associated data to avoid foreign key constraints
+    const userTasks = await prisma.task.findMany({
+      where: { userId: DEFAULT_USER_ID },
+      select: { id: true },
     });
+    const taskIds = userTasks.map(task => task.id);
+    
+    await prisma.taskHistory.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.reminder.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.task.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.label.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.list.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.user.deleteMany({ where: { id: DEFAULT_USER_ID } });
   });
 
   describe('GET /api/labels', () => {

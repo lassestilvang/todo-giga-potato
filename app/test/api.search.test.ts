@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import prisma from '@/lib/prisma';
+import { createUser } from '@/lib/db-utils';
 
 const API_BASE_URL = 'http://localhost:32754/api';
-const DEFAULT_USER_ID = 'cmki1ekso0000i4ezi4fhaecm';
+let DEFAULT_USER_ID: string;
 
 describe('Search API', () => {
   let testListId: string;
@@ -11,6 +12,14 @@ describe('Search API', () => {
   let testTask2Id: string;
 
   beforeEach(async () => {
+    // Create a test user first with unique email
+    const testEmail = `test-search-${Date.now()}@example.com`;
+    const testUser = await createUser({
+      email: testEmail,
+      name: 'Test Search User',
+    });
+    DEFAULT_USER_ID = testUser.id;
+
     // Create a test list
     const testList = await prisma.list.create({
       data: {
@@ -60,18 +69,20 @@ describe('Search API', () => {
   });
 
   afterEach(async () => {
-    // Cleanup test data
-    await prisma.task.deleteMany({
-      where: { id: { in: [testTask1Id, testTask2Id] } },
+    // Manually delete all associated data to avoid foreign key constraints
+    const userTasks = await prisma.task.findMany({
+      where: { userId: DEFAULT_USER_ID },
+      select: { id: true },
     });
-
-    await prisma.label.deleteMany({
-      where: { id: testLabelId },
-    });
-
-    await prisma.list.deleteMany({
-      where: { id: testListId },
-    });
+    const taskIds = userTasks.map(task => task.id);
+    
+    await prisma.taskHistory.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.reminder.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.task.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.label.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.list.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.user.deleteMany({ where: { id: DEFAULT_USER_ID } });
   });
 
   describe('GET /api/search', () => {

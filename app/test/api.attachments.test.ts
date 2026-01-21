@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import prisma from '@/lib/prisma';
+import { createUser } from '@/lib/db-utils';
 
 const API_BASE_URL = 'http://localhost:32754/api';
-const DEFAULT_USER_ID = 'cmki1ekso0000i4ezi4fhaecm';
+let DEFAULT_USER_ID: string;
 
 describe('Attachments API', () => {
   let testListId: string;
@@ -10,6 +11,14 @@ describe('Attachments API', () => {
   let testAttachmentId: string;
 
   beforeEach(async () => {
+    // Create a test user first with unique email
+    const testEmail = `test-attachments-${Date.now()}@example.com`;
+    const testUser = await createUser({
+      email: testEmail,
+      name: 'Test Attachments User',
+    });
+    DEFAULT_USER_ID = testUser.id;
+
     // Create a test list
     const testList = await prisma.list.create({
       data: {
@@ -49,18 +58,20 @@ describe('Attachments API', () => {
   });
 
   afterEach(async () => {
-    // Cleanup test data
-    await prisma.attachment.deleteMany({
-      where: { id: testAttachmentId },
+    // Manually delete all associated data to avoid foreign key constraints
+    const userTasks = await prisma.task.findMany({
+      where: { userId: DEFAULT_USER_ID },
+      select: { id: true },
     });
-
-    await prisma.task.deleteMany({
-      where: { id: testTaskId },
-    });
-
-    await prisma.list.deleteMany({
-      where: { id: testListId },
-    });
+    const taskIds = userTasks.map(task => task.id);
+    
+    await prisma.taskHistory.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.reminder.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.task.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.label.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.list.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.user.deleteMany({ where: { id: DEFAULT_USER_ID } });
   });
 
   describe('POST /api/attachments', () => {

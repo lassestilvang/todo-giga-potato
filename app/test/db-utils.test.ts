@@ -14,17 +14,26 @@ import {
   createLabel,
   updateLabel,
   deleteLabel,
+  createUser,
 } from '@/lib/db-utils';
 import prisma from '@/lib/prisma';
 
 describe('Database Operations', () => {
-  const testUserId = 'cmki1ekso0000i4ezi4fhaecm';
+  let testUserId: string;
   let testListId: string;
   let testLabelId: string;
   let testTaskId: string;
 
   // Create test data before each test
   beforeEach(async () => {
+    // Create a test user first with unique email
+    const testEmail = `test-${Date.now()}@example.com`;
+    const testUser = await createUser({
+      email: testEmail,
+      name: 'Test User',
+    });
+    testUserId = testUser.id;
+
     // Create a test list
     const testList = await prisma.list.create({
       data: {
@@ -63,27 +72,48 @@ describe('Database Operations', () => {
 
   // Cleanup test data after each test
   afterEach(async () => {
-    // Delete task history first to avoid foreign key constraints
+    // Manually delete all associated data to avoid foreign key constraints
+    // Get all tasks associated with the user
+    const userTasks = await prisma.task.findMany({
+      where: { userId: testUserId },
+      select: { id: true },
+    });
+    const taskIds = userTasks.map(task => task.id);
+    
+    // Delete task history
     await prisma.taskHistory.deleteMany({
-      where: { taskId: testTaskId },
+      where: { taskId: { in: taskIds } },
     });
-
-    // Delete test task
+    
+    // Delete attachments
+    await prisma.attachment.deleteMany({
+      where: { taskId: { in: taskIds } },
+    });
+    
+    // Delete reminders
+    await prisma.reminder.deleteMany({
+      where: { taskId: { in: taskIds } },
+    });
+    
+    // Delete tasks
     await prisma.task.deleteMany({
-      where: { id: testTaskId },
+      where: { userId: testUserId },
     });
-
-    // Delete test label
+    
+    // Delete labels
     await prisma.label.deleteMany({
-      where: { id: testLabelId },
+      where: { userId: testUserId },
     });
-
-    // Delete test list (using deleteList function which handles task deletion properly)
-    try {
-      await deleteList(testListId);
-    } catch (error) {
-      console.error('Error deleting test list:', error);
-    }
+    
+    // Delete lists
+    await prisma.list.deleteMany({
+      where: { userId: testUserId },
+    });
+    
+    // Delete user
+    await prisma.user.deleteMany({
+      where: { id: testUserId },
+    });
   });
 
   describe('List Operations', () => {

@@ -349,14 +349,14 @@ export async function createUser(data: any) {
             isFavorite: true,
           },
         ],
-        labels: {
-          create: [
-            { name: 'High Priority', color: '#ef4444' },
-            { name: 'Urgent', color: '#f59e0b' },
-            { name: 'Important', color: '#3b82f6' },
-            { name: 'Low', color: '#8b5cf6' },
-          ],
-        },
+      },
+      labels: {
+        create: [
+          { name: 'High Priority', color: '#ef4444' },
+          { name: 'Urgent', color: '#f59e0b' },
+          { name: 'Important', color: '#3b82f6' },
+          { name: 'Low', color: '#8b5cf6' },
+        ],
       },
     },
   });

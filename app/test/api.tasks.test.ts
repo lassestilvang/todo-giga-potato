@@ -1,15 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import prisma from '@/lib/prisma';
-import { deleteList } from '@/lib/db-utils';
+import { deleteList, createUser } from '@/lib/db-utils';
 
 const API_BASE_URL = 'http://localhost:32754/api';
-const DEFAULT_USER_ID = 'cmki1ekso0000i4ezi4fhaecm';
+let DEFAULT_USER_ID: string;
 
 describe('Tasks API', () => {
   let testListId: string;
   let testTaskId: string;
 
   beforeEach(async () => {
+    // Create a test user first with unique email
+    const testEmail = `test-tasks-${Date.now()}@example.com`;
+    const testUser = await createUser({
+      email: testEmail,
+      name: 'Test Tasks User',
+    });
+    DEFAULT_USER_ID = testUser.id;
+
     // Create a test list to associate with tasks
     const testList = await prisma.list.create({
       data: {
@@ -37,22 +45,20 @@ describe('Tasks API', () => {
   });
 
   afterEach(async () => {
-    // Delete task history first to avoid foreign key constraints
-    await prisma.taskHistory.deleteMany({
-      where: { taskId: testTaskId },
+    // Manually delete all associated data to avoid foreign key constraints
+    const userTasks = await prisma.task.findMany({
+      where: { userId: DEFAULT_USER_ID },
+      select: { id: true },
     });
-
-    // Cleanup test data
-    await prisma.task.deleteMany({
-      where: { id: testTaskId },
-    });
-
-    // Use deleteList function which handles task deletion properly
-    try {
-      await deleteList(testListId);
-    } catch (error) {
-      console.error('Error deleting test list:', error);
-    }
+    const taskIds = userTasks.map(task => task.id);
+    
+    await prisma.taskHistory.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.reminder.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.task.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.label.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.list.deleteMany({ where: { userId: DEFAULT_USER_ID } });
+    await prisma.user.deleteMany({ where: { id: DEFAULT_USER_ID } });
   });
 
   describe('GET /api/tasks', () => {
