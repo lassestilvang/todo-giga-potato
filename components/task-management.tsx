@@ -81,6 +81,12 @@ export function TaskManagement({
 
   const handleCreateTask = async (data: any) => {
     try {
+      // Find the default list (Inbox) dynamically
+      const defaultList = lists.find(list => list.isDefault)
+      if (!defaultList) {
+        throw new Error("No default list found")
+      }
+
       const taskData: any = {
         name: data.name,
         description: data.description || undefined,
@@ -89,7 +95,7 @@ export function TaskManagement({
         priority: parseInt(data.priority),
         isRecurring: data.isRecurring || false,
         recurringPattern: data.recurringPattern || undefined,
-        listId: "cmki1eksp0001i4eznnccov1s", // Use actual inbox list ID from API
+        listId: defaultList.id, // Dynamically use default list ID
         userId: "cmki1ekso0000i4ezi4fhaecm", // TODO: Replace with actual user ID
       }
 
